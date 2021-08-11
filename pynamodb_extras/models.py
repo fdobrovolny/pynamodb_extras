@@ -52,15 +52,8 @@ class ExtrasModel(Model):
         range_key_attr: Attribute = cls._range_key_attribute()
         if range_key_attr is not None and serialized_range_key is None:
             if isinstance(range_key_attr, SourcedAttributeMixin):
-                if range_key_attr.only_default:
-                    return serialized_hash_key, range_key
-                if range_key_attr.source_hash_key is True:
-                    return serialized_hash_key, range_key_attr.serialize(hash_key)
-                elif callable(range_key_attr.source):
-                    return (
-                        serialized_hash_key,
-                        range_key_attr.source(hash_key, None, range_key_attr),
-                    )
+                if not range_key_attr.only_default and range_key_attr.source_hash_key is True:
+                    serialized_range_key = range_key_attr.serialize(hash_key)
 
         return serialized_hash_key, serialized_range_key
 
