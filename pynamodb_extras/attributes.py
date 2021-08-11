@@ -12,10 +12,14 @@ class ULIDAttributeMixin:
     Attribute for storing ULID.
     """
 
-    def serialize(self, value: ulid.ulid) -> str:
-        return super().serialize(value.str)
+    def serialize(self, value: Union[ulid.ULID, str]) -> str:
+        if isinstance(value, ulid.ULID):
+            return super().serialize(value.str)
+        return super().serialize(value)
 
-    def deserialize(self, value: str) -> ulid.ulid:
+    def deserialize(self, value: Union[ulid.ULID, str]) -> ulid.ULID:
+        if isinstance(value, ulid.ULID):
+            return value
         return ulid.parse(super().deserialize(value))
 
 
