@@ -37,13 +37,12 @@ class PrefixedUnicodeAttribute(UnicodeAttribute):
     def serialize(self, value):
         if value is not None:
             return self.prefix + (super().serialize(value) if value != "" else value)
-        return value
 
     def deserialize(self, value):
         if value is None:
             return value
         elif value.startswith(self.prefix):
-            return value[len(self.prefix) :]
+            return value[len(self.prefix):]
         else:
             raise AttributeError(
                 f"Prefix {self.prefix} was not found during deserialization in value '{str(value)}'"
@@ -109,12 +108,12 @@ class SourcedAttributeMixin:
     only_default: bool = False
 
     def __init__(
-        self,
-        source=None,
-        only_default=False,
-        source_hash_key=False,
-        *args,
-        **kwargs,
+            self,
+            source=None,
+            only_default=False,
+            source_hash_key=False,
+            *args,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         if source_hash_key is False and source is None:
@@ -140,6 +139,8 @@ class SourcedAttributeMixin:
         if self.source is None and self.source_hash_key:
             return getattr(obj, obj._hash_keyname, "")
         if callable(self.source):
+            if value is None:
+                return
             return self.source(value, obj, self)
         return getattr(obj, self.source)
 

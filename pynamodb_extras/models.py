@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Optional
 
 from pynamodb.attributes import Attribute, UnicodeAttribute, MapAttribute
 from pynamodb.exceptions import AttributeNullError
@@ -33,6 +33,11 @@ class ExtrasModel(Model):
         If some sourced value is based on value with default this will initialize it at model instance creation.
         """
         super()._set_attributes(**kwargs)
+        self._set_sourced_attributes()
+
+    def _set_sourced_attributes(self):
+        """
+        Obtains and sets values for sourced attributes.
 
         """
         for name, attr in [
@@ -40,8 +45,22 @@ class ExtrasModel(Model):
             for name, attr in self.get_attributes().items()
             if isinstance(attr, SourcedAttributeMixin)
         ]:
-            setattr(self, name, attr.get_value(self, getattr(self, name, "")))
-            """
+            setattr(self, name, attr.get_source_value(self, getattr(self, name, "")))
+
+    @classmethod
+    def from_raw_data(cls, data: Dict[str, Any]):
+        """
+        Returns an instance of this class
+        from the raw data
+
+        :param data: A serialized DynamoDB object
+        """
+        if data is None:
+            raise ValueError("Received no data to construct object")
+
+        ins = cls._instantiate(data)
+        # ins._set_sourced_attributes()
+        return ins
 
     @classmethod
     def _serialize_keys(cls, hash_key, range_key=None):
@@ -77,43 +96,64 @@ class ExtrasModel(Model):
             return UnicodeAttribute(range_key=True, attr_name=cls._base_range_keyname)
         return range_key_attribute
 
-    def dict_serialize(self, null_check: bool = True, use_python_names: bool = True) -> Dict[str, Any]:
+    def serialize_value(self, name, null_check: bool = True):
+        attr = self.get_attributes()[name]
+        value = getattr(self, name)
+        try:
+            if isinstance(value, MapAttribute) and not value.validate(null_check=null_check):
+                raise ValueError("Attribute '{}' is not correctly typed".format(name))
+        except AttributeNullError as e:
+            e.prepend_path(name)
+            raise
+
+        if value is not None:
+            if isinstance(attr, MapAttribute):
+                attr_value = attr.serialize(value, null_check=null_check)
+            else:
+                attr_value = attr.serialize(value)
+        else:
+            attr_value = None
+        if null_check and attr_value is None and not attr.null:
+            raise AttributeNullError(name)
+
+        return attr_value
+
+    def dict_serialize(self, fields: Optional[List] = None, exclude: Optional[List] = None, null_check: bool = True,
+                       use_python_names: bool = True) -> Dict[str, Any]:
         """
         Serialize attribute values into dictionary
         """
         if hasattr(self, "_dict_serialize_fields") and hasattr(self, "_dict_serialize_exclude"):
             raise AttributeError("`_dict_serialize_fields` and `_dict_serialize_exclude` are mutually exclusive")
 
+        if fields is not None and exclude is not None:
+            raise AttributeError("`fields` and `exclude` are mutually exclusive")
+
+        _fields = fields if fields is not None or exclude is not None else getattr(
+            self, "_dict_serialize_fields", "__all__")
+        _exclude = exclude if fields is not None or exclude is not None else getattr(
+            self, "_dict_serialize_exclude", [])
+
+        if _exclude is not None and len(_exclude) > 0:
+            allowed_keys = {
+                key for key in self.get_attributes().keys() if
+                not key.startswith("_") and key not in _exclude
+            }
+        elif _fields is not None and _fields != "__all__":
+            allowed_keys = {
+                key for key in self.get_attributes().keys() if key in _fields
+            }
+        else:
+            allowed_keys = {
+                key for key in self.get_attributes().keys() if
+                not key.startswith("_")
+            }
+
         attribute_values: Dict[str, Dict[str, Any]] = {}
-        for name, attr in self.get_attributes().items():
-            if name in getattr(self, "_dict_serialize_exclude", []) or (
-                    "__all__" != getattr(
-                self, "_dict_serialize_fields", "__all__"
-            ) and name not in getattr(self, "_dict_serialize_fields", "__all__")
-            ) or (
-                    "__all__" == getattr(
-                self, "_dict_serialize_fields", "__all__"
-            ) and name.startswith("_")):
-                continue
-            value = getattr(self, name)
-            try:
-                if isinstance(value, MapAttribute) and not value.validate(null_check=null_check):
-                    raise ValueError("Attribute '{}' is not correctly typed".format(name))
-            except AttributeNullError as e:
-                e.prepend_path(name)
-                raise
-
-            if value is not None:
-                if isinstance(attr, MapAttribute):
-                    attr_value = attr.serialize(value, null_check=null_check)
-                else:
-                    attr_value = attr.serialize(value)
-            else:
-                attr_value = None
-            if null_check and attr_value is None and not attr.null:
-                raise AttributeNullError(name)
-
-            attribute_values[name if use_python_names else attr.attr_name] = attr_value
+        for name in allowed_keys:
+            attribute_values[
+                name if use_python_names else self.get_attributes()[name].attr_name
+            ] = self.serialize_value(name, null_check)
         return attribute_values
 
     def json(self, null_check: bool = True, use_python_names: bool = True):
