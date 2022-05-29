@@ -160,4 +160,4 @@ class ExtrasModel(Model):
         """
         Serialize attribute values into json.
         """
-        return json.dumps(self.dict_serialize(null_check, use_python_names))
+        return json.dumps(self.dict_serialize(null_check=null_check, use_python_names=use_python_names))
