@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Callable, Optional, TypeVar, Union
 
 import ulid
@@ -36,6 +37,9 @@ class PrefixedUnicodeAttribute(UnicodeAttribute):
 
     def serialize(self, value):
         if value is not None:
+            if value.startswith(self.prefix):
+                warnings.warn("The value should not start with prefix!", DeprecationWarning)
+                return value
             return self.prefix + (super().serialize(value) if value != "" else value)
 
     def deserialize(self, value):
