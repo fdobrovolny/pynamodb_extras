@@ -9,7 +9,7 @@ from pynamodb_extras.attributes import SourcedAttributeMixin
 
 
 class ExtrasModel(Model):
-    # Use the following attributes to be bale to overwrite hash and range key on different entities
+    # Use the following attributes to be base to overwrite hash and range key on different entities
     _base_hash_keyname: str
     _base_range_keyname: str
 
