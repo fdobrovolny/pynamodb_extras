@@ -109,6 +109,7 @@ class SourcedAttributeMixin:
         str, Callable[[Any, Optional[Model], "SourcedAttributeMixin"], Any], None
     ]
     source_hash_key: bool = False
+    source_range_key: bool = False
     only_default: bool = False
 
     def __init__(
@@ -116,15 +117,17 @@ class SourcedAttributeMixin:
             source=None,
             only_default=False,
             source_hash_key=False,
+            source_range_key=False,
             *args,
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        if source_hash_key is False and source is None:
-            raise ValueError("source can not be null if source_hash_key is False.")
+        if (source_hash_key is False and source_range_key is False) and source is None:
+            raise ValueError("source can not be null if source_hash_key or source_range_key is False.")
         self.source = source
         self.only_default = only_default
         self.source_hash_key = source_hash_key
+        self.source_range_key = source_range_key
 
     def get_source_value_old(self, obj: Model, value=None):
         if self.only_default and value is not None:
@@ -142,6 +145,8 @@ class SourcedAttributeMixin:
             return value
         if self.source is None and self.source_hash_key:
             return getattr(obj, obj._hash_keyname, "")
+        if self.source is None and self.source_range_key:
+            return getattr(obj, obj._range_keyname, "")
         if callable(self.source):
             """
             TODO: There might be a reason why we want this not sure why.
