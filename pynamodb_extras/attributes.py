@@ -143,8 +143,11 @@ class SourcedAttributeMixin:
         if self.source is None and self.source_hash_key:
             return getattr(obj, obj._hash_keyname, "")
         if callable(self.source):
+            """
+            TODO: There might be a reason why we want this not sure why.
             if value is None:
                 return
+            """
             return self.source(value, obj, self)
         return getattr(obj, self.source)
 
