@@ -161,3 +161,6 @@ class ExtrasModel(Model):
         Serialize attribute values into json.
         """
         return json.dumps(self.dict_serialize(null_check=null_check, use_python_names=use_python_names))
+
+    def __repr__(self):
+        return self.__class__.__name__ + "@" + super().__repr__()
