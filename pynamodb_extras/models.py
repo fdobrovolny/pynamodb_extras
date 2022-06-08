@@ -2,6 +2,7 @@ import json
 from typing import Dict, Any, List, Union, Optional
 
 from pynamodb.attributes import Attribute, UnicodeAttribute, MapAttribute
+from pynamodb.connection import TableConnection
 from pynamodb.exceptions import AttributeNullError
 from pynamodb.models import Model
 
@@ -15,6 +16,16 @@ class ExtrasModel(Model):
 
     _dict_serialize_fields: Union[List[str], str]
     _dict_serialize_exclude: List[str]
+    _connection_map = {}
+
+    @classmethod
+    def _get_connection(cls) -> TableConnection:
+        """
+        This makes sure that we have only one connection per table.
+        """
+        if cls.Meta.table_name not in ExtrasModel._connection_map:
+            ExtrasModel._connection_map[cls.Meta.table_name] = super()._get_connection()
+        return ExtrasModel._connection_map[cls.Meta.table_name]
 
     def _container_serialize(self, *args, **kwargs):
         """
