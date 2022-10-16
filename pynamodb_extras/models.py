@@ -120,7 +120,10 @@ class ExtrasModel(Model):
 
         if value is not None:
             if isinstance(attr, MapAttribute):
-                attr_value = attr.as_dict()
+                if isinstance(value, MapAttribute):
+                    attr_value = value.as_dict()
+                else:
+                    attr_value = value
             else:
                 attr_value = attr.serialize(value)
         else:
