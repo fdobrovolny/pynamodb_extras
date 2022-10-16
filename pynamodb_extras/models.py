@@ -1,5 +1,6 @@
 import json
 from typing import Dict, Any, List, Union, Optional
+import warnings
 
 from pynamodb.attributes import Attribute, UnicodeAttribute, MapAttribute
 from pynamodb.connection import TableConnection
@@ -129,8 +130,9 @@ class ExtrasModel(Model):
 
         return attr_value
 
-    def dict_serialize(self, fields: Optional[List] = None, exclude: Optional[List] = None, null_check: bool = True,
-                       use_python_names: bool = True) -> Dict[str, Any]:
+    def as_dict(self, fields: Optional[List] = None, exclude: Optional[List] = None,
+                null_check: bool = True,
+                use_python_names: bool = True) -> Dict[str, Any]:
         """
         Serialize attribute values into dictionary
         """
@@ -166,6 +168,12 @@ class ExtrasModel(Model):
                 name if use_python_names else self.get_attributes()[name].attr_name
             ] = self.serialize_value(name, null_check)
         return attribute_values
+
+    def dict_serialize(self, *args, **kwargs) -> Dict[str, Any]:
+        warnings.warn(
+            DeprecationWarning("Please use `as_dict` instead of `dict_serialize`.")
+        )
+        return self.as_dict(*args, **kwargs)
 
     def json(self, null_check: bool = True, use_python_names: bool = True):
         """
