@@ -119,7 +119,7 @@ class ExtrasModel(Model):
 
         if value is not None:
             if isinstance(attr, MapAttribute):
-                attr_value = attr.serialize(value, null_check=null_check)
+                attr_value = attr.as_dict()
             else:
                 attr_value = attr.serialize(value)
         else:
