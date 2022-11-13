@@ -174,7 +174,8 @@ class ExtrasModel(Model):
 
     def dict_serialize(self, *args, **kwargs) -> Dict[str, Any]:
         warnings.warn(
-            DeprecationWarning("Please use `as_dict` instead of `dict_serialize`.")
+            "Please use `as_dict` instead of `dict_serialize`.",
+            DeprecationWarning
         )
         return self.as_dict(*args, **kwargs)
 
