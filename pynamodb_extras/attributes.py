@@ -157,11 +157,11 @@ class SourcedAttributeMixin:
         return getattr(obj, self.source)
 
 
-class SourcedUnicodeAttribute(UnicodeAttribute, SourcedAttributeMixin):
+class SourcedUnicodeAttribute(SourcedAttributeMixin, UnicodeAttribute):
     pass
 
 
-class SourcedULIDAttribute(ULIDAttribute, SourcedAttributeMixin):
+class SourcedULIDAttribute(SourcedAttributeMixin, ULIDAttribute):
     pass
 
 
