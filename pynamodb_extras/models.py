@@ -19,15 +19,6 @@ class ExtrasModel(Model):
     _dict_serialize_exclude: List[str]
     _connection_map = {}
 
-    @classmethod
-    def _get_connection(cls) -> TableConnection:
-        """
-        This makes sure that we have only one connection per table.
-        """
-        if cls.Meta.table_name not in ExtrasModel._connection_map:
-            ExtrasModel._connection_map[cls.Meta.table_name] = super()._get_connection()
-        return ExtrasModel._connection_map[cls.Meta.table_name]
-
     def _container_serialize(self, *args, **kwargs):
         """
         Injects Source attribute initialization to serialization.
@@ -83,7 +74,10 @@ class ExtrasModel(Model):
         range_key_attr: Attribute = cls._range_key_attribute()
         if range_key_attr is not None and serialized_range_key is None:
             if isinstance(range_key_attr, SourcedAttributeMixin):
-                if not range_key_attr.only_default and range_key_attr.source_hash_key is True:
+                if (
+                    not range_key_attr.only_default
+                    and range_key_attr.source_hash_key is True
+                ):
                     serialized_range_key = range_key_attr.serialize(hash_key)
 
         return serialized_hash_key, serialized_range_key
@@ -112,7 +106,9 @@ class ExtrasModel(Model):
         attr = self.get_attributes()[name]
         value = getattr(self, name)
         try:
-            if isinstance(value, MapAttribute) and not value.validate(null_check=null_check):
+            if isinstance(value, MapAttribute) and not value.validate(
+                null_check=null_check
+            ):
                 raise ValueError("Attribute '{}' is not correctly typed".format(name))
         except AttributeNullError as e:
             e.prepend_path(name)
@@ -133,27 +129,42 @@ class ExtrasModel(Model):
 
         return attr_value
 
-    def as_dict(self, fields: Optional[List] = None, exclude: Optional[List] = None,
-                null_check: bool = True,
-                use_python_names: bool = True) -> Dict[str, Any]:
+    def as_dict(
+        self,
+        fields: Optional[List] = None,
+        exclude: Optional[List] = None,
+        null_check: bool = True,
+        use_python_names: bool = True,
+    ) -> Dict[str, Any]:
         """
         Serialize attribute values into dictionary
         """
-        if hasattr(self, "_dict_serialize_fields") and hasattr(self, "_dict_serialize_exclude"):
-            raise AttributeError("`_dict_serialize_fields` and `_dict_serialize_exclude` are mutually exclusive")
+        if hasattr(self, "_dict_serialize_fields") and hasattr(
+            self, "_dict_serialize_exclude"
+        ):
+            raise AttributeError(
+                "`_dict_serialize_fields` and `_dict_serialize_exclude` are mutually exclusive"
+            )
 
         if fields is not None and exclude is not None:
             raise AttributeError("`fields` and `exclude` are mutually exclusive")
 
-        _fields = fields if fields is not None or exclude is not None else getattr(
-            self, "_dict_serialize_fields", "__all__")
-        _exclude = exclude if fields is not None or exclude is not None else getattr(
-            self, "_dict_serialize_exclude", [])
+        _fields = (
+            fields
+            if fields is not None or exclude is not None
+            else getattr(self, "_dict_serialize_fields", "__all__")
+        )
+        _exclude = (
+            exclude
+            if fields is not None or exclude is not None
+            else getattr(self, "_dict_serialize_exclude", [])
+        )
 
         if _exclude is not None and len(_exclude) > 0:
             allowed_keys = {
-                key for key in self.get_attributes().keys() if
-                not key.startswith("_") and key not in _exclude
+                key
+                for key in self.get_attributes().keys()
+                if not key.startswith("_") and key not in _exclude
             }
         elif _fields is not None and _fields != "__all__":
             allowed_keys = {
@@ -161,8 +172,7 @@ class ExtrasModel(Model):
             }
         else:
             allowed_keys = {
-                key for key in self.get_attributes().keys() if
-                not key.startswith("_")
+                key for key in self.get_attributes().keys() if not key.startswith("_")
             }
 
         attribute_values: Dict[str, Dict[str, Any]] = {}
@@ -174,8 +184,7 @@ class ExtrasModel(Model):
 
     def dict_serialize(self, *args, **kwargs) -> Dict[str, Any]:
         warnings.warn(
-            "Please use `as_dict` instead of `dict_serialize`.",
-            DeprecationWarning
+            "Please use `as_dict` instead of `dict_serialize`.", DeprecationWarning
         )
         return self.as_dict(*args, **kwargs)
 

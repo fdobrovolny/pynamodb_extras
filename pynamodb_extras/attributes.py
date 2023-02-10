@@ -38,7 +38,9 @@ class PrefixedUnicodeAttribute(UnicodeAttribute):
     def serialize(self, value):
         if value is not None:
             if value.startswith(self.prefix):
-                warnings.warn("The value should not start with prefix!", DeprecationWarning)
+                warnings.warn(
+                    "The value should not start with prefix!", DeprecationWarning
+                )
                 return value
             return self.prefix + (super().serialize(value) if value != "" else value)
 
@@ -46,7 +48,7 @@ class PrefixedUnicodeAttribute(UnicodeAttribute):
         if value is None:
             return value
         elif value.startswith(self.prefix):
-            return value[len(self.prefix):]
+            return value[len(self.prefix) :]
         else:
             raise AttributeError(
                 f"Prefix {self.prefix} was not found during deserialization in value '{str(value)}'"
@@ -113,17 +115,19 @@ class SourcedAttributeMixin:
     only_default: bool = False
 
     def __init__(
-            self,
-            source=None,
-            only_default=False,
-            source_hash_key=False,
-            source_range_key=False,
-            *args,
-            **kwargs,
+        self,
+        source=None,
+        only_default=False,
+        source_hash_key=False,
+        source_range_key=False,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         if (source_hash_key is False and source_range_key is False) and source is None:
-            raise ValueError("source can not be null if source_hash_key or source_range_key is False.")
+            raise ValueError(
+                "source can not be null if source_hash_key or source_range_key is False."
+            )
         self.source = source
         self.only_default = only_default
         self.source_hash_key = source_hash_key
