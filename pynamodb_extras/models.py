@@ -3,9 +3,10 @@ from typing import Dict, Any, List, Union, Optional
 import warnings
 
 from pynamodb.attributes import Attribute, UnicodeAttribute, MapAttribute
-from pynamodb.connection import TableConnection
+from pynamodb.constants import KEY_TYPE, ATTR_NAME, ATTR_TYPE
 from pynamodb.exceptions import AttributeNullError
 from pynamodb.models import Model
+from pynamodb.types import HASH, RANGE, STRING
 
 from pynamodb_extras.attributes import SourcedAttributeMixin
 
@@ -192,7 +193,39 @@ class ExtrasModel(Model):
         """
         Serialize attribute values into json.
         """
-        return json.dumps(self.dict_serialize(null_check=null_check, use_python_names=use_python_names))
+        return json.dumps(
+            self.as_dict(null_check=null_check, use_python_names=use_python_names)
+        )
+
+    @classmethod
+    def _get_schema(cls) -> Dict[str, Any]:
+        data = super(ExtrasModel, cls)._get_schema()
+
+        # Check if hash_key and range_key are present
+        range_key = None
+        hash_key = None
+        for key in data.get("key_schema", []):
+            if key.get(KEY_TYPE) == HASH:
+                hash_key = key
+            elif key.get(KEY_TYPE) == RANGE:
+                range_key = key
+
+        if hash_key is None and hasattr(cls, "_base_hash_keyname"):
+            data["key_schema"].append(
+                {KEY_TYPE: HASH, ATTR_NAME: cls._base_hash_keyname}
+            )
+            data["attribute_definitions"].append(
+                {ATTR_NAME: cls._base_hash_keyname, ATTR_TYPE: STRING}
+            )
+        if range_key is None and hasattr(cls, "_base_range_keyname"):
+            data["key_schema"].append(
+                {KEY_TYPE: RANGE, ATTR_NAME: cls._base_range_keyname}
+            )
+            data["attribute_definitions"].append(
+                {ATTR_NAME: cls._base_range_keyname, ATTR_TYPE: STRING}
+            )
+
+        return data
 
     def __repr__(self):
         return self.__class__.__name__ + "@" + super().__repr__()
